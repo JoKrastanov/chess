@@ -42,8 +42,8 @@ body {
   font-size: 22px;
 }
 
-.files {
-  padding: 0;
+.ranks {
+  padding-left: 2px;
 
   p {
     height: 10vh;
@@ -56,7 +56,7 @@ body {
   }
 }
 
-.ranks {
+.files {
   display: flex;
   bottom: -2vh;
   padding-left: 8vh;
