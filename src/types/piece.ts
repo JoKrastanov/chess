@@ -35,19 +35,17 @@ export enum PieceCode {
 }
 
 // HTML (dec) code for rendering the chess piece icons
-export interface PieceIcon {
-  [PieceCode.WPawn]: "&#9817;";
-  [PieceCode.WKnight]: "&#9816;";
-  [PieceCode.WBishop]: "&#9815;";
-  [PieceCode.WRook]: "&#9814;";
-  [PieceCode.WQueen]: "&#9813;";
-  [PieceCode.WKing]: "&#9812;";
-
-  [PieceCode.BPawn]: "&#9823;";
-  [PieceCode.BKnight]: "&#9822;";
-  [PieceCode.BBishop]: "&#9821;";
-  [PieceCode.BRook]: "&#9820;";
-  [PieceCode.BQueen]: "&#9819;";
-  [PieceCode.BKing]: "&#9818;";
-}
-
+export const PieceIcon: Record<number, string> = {
+  [PieceCode.WPawn]: "&#9817;",
+  [PieceCode.WKnight]: "&#9816;",
+  [PieceCode.WBishop]: "&#9815;",
+  [PieceCode.WRook]: "&#9814;",
+  [PieceCode.WQueen]: "&#9813;",
+  [PieceCode.WKing]: "&#9812;",
+  [PieceCode.BPawn]: "&#9823;",
+  [PieceCode.BKnight]: "&#9822;",
+  [PieceCode.BBishop]: "&#9821;",
+  [PieceCode.BRook]: "&#9820;",
+  [PieceCode.BQueen]: "&#9819;",
+  [PieceCode.BKing]: "&#9818;",
+};

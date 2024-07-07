@@ -1,9 +1,9 @@
 import { PieceCode } from "./piece";
 
 export class Board {
-  square: number[];
+  squares: number[];
 
   constructor() {
-    this.square = Array(64);
+    this.squares = Array(64).fill(PieceCode.Empty);
   }
 }
