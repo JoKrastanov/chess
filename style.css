@@ -1,4 +1,5 @@
 body {
+  font-family: "Montserrat";
   background-color: rgb(48, 57, 57);
 }
 
@@ -12,6 +13,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
 }
 
 .rank {
@@ -31,4 +33,40 @@ body {
 .rank:nth-child(even) .square:nth-child(even),
 .rank:nth-child(odd) .square:nth-child(odd) {
   background-color: rgb(231, 222, 213);
+}
+
+.files,
+.ranks {
+  position: absolute;
+  font-weight: 600;
+  font-size: 22px;
+}
+
+.files {
+  padding: 0;
+
+  p {
+    height: 10vh;
+    margin: 0;
+    color: rgb(231, 222, 213);
+  }
+
+  p:nth-child(odd) {
+    color: rgb(86, 138, 78);
+  }
+}
+
+.ranks {
+  display: flex;
+  bottom: -2vh;
+  padding-left: 8vh;
+
+  p {
+    width: 10vh;
+    color: rgb(86, 138, 78);
+  }
+
+  p:nth-child(odd) {
+    color: rgb(231, 222, 213);
+  }
 }
