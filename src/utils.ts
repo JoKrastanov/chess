@@ -1,3 +1,6 @@
+const moveSound = new Audio('../../assets/audio/move-self.mp3');
+const captureSound = new Audio('../../assets/audio/capture.mp3');
+
 export function addPieceEventListeners(boardDOM: Element, pieceDOM: HTMLSpanElement) {
     pieceDOM.draggable = true;
     pieceDOM.ondragstart = drag;
@@ -15,10 +18,10 @@ export function drop(ev: any) {
     }
     if (ev.target.innerHTML !== "") {
         ev.target.innerHTML = ""
-        new Audio('./assets/audio/capture.mp3').play();
+        captureSound.play();
     }
     else {
-        new Audio('./assets/audio/move-self.mp3').play();
+        moveSound.play();
     }
     ev.target.appendChild(document.getElementById(data));
 }
