@@ -30,6 +30,6 @@ export class Board {
     pieceDOM.style.top = `${offsetY}px`;
 
     this.boardDOM.appendChild(pieceDOM)
-    addPieceEventListeners(pieceDOM)
+    addPieceEventListeners(this.boardDOM, pieceDOM)
   }
 }
