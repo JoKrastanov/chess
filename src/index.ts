@@ -1,5 +1,10 @@
 import { Board } from "./types/board";
-import { PieceCode, PieceIcon } from "./types/piece";
+import { FenPieces, PieceCode, PieceIcon } from "./types/piece";
+
+type FENString = string
+type FENChar = "r" | "n" | "b" | "q" | "k"
+
+const STARTING_BOARD_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 
 function initGame() {
     const board = new Board();
@@ -9,9 +14,9 @@ function initGame() {
 function addPieceToBoard(board: Board, squaresDOM: NodeListOf<Element>, squareIdx: number, piece: PieceCode) {
     const boardDOM = document.querySelector(".board")
     if (!boardDOM) return
-    const squareDOM = squaresDOM[squareIdx]
-    const pieceDOM = document.createElement("span")
 
+    const squareDOM = squaresDOM[squaresDOM.length - 1 - squareIdx]
+    const pieceDOM = document.createElement("span")
     board.squares[squareIdx] = piece
 
     const boardDOMBounds = boardDOM.getBoundingClientRect()
@@ -28,42 +33,30 @@ function addPieceToBoard(board: Board, squaresDOM: NodeListOf<Element>, squareId
     boardDOM?.appendChild(pieceDOM)
 }
 
+function renderFromFEN(fen: FENString, board: Board, squaresDOM: NodeListOf<Element>) {
+    let boardIdx = 0
+    for (let i = 0; i < fen.length; i++) {
+        const curChar = fen.charAt(i)
+        if (curChar === "/") continue;
+        if (isFinite(parseInt(curChar))) {
+            boardIdx += parseInt(curChar)
+            continue
+        }
+        const pieceToRender = FenPieces[curChar.toLowerCase() as FENChar]
+        // If it is upper case => black piece
+        if (curChar === curChar.toUpperCase()) {
+            addPieceToBoard(board, squaresDOM, boardIdx, pieceToRender + 8);
+        }
+        else {
+            addPieceToBoard(board, squaresDOM, boardIdx, pieceToRender + 0);
+        }
+        boardIdx++
+    }
+}
+
 function renderBoard(board: Board) {
     const squaresDOM = document.querySelectorAll(".square")
-
-    // Add all starting pieces
-    addPieceToBoard(board, squaresDOM, 0, PieceCode.BRook);
-    addPieceToBoard(board, squaresDOM, 1, PieceCode.BKnight);
-    addPieceToBoard(board, squaresDOM, 2, PieceCode.BBishop);
-    addPieceToBoard(board, squaresDOM, 3, PieceCode.BQueen);
-    addPieceToBoard(board, squaresDOM, 4, PieceCode.BKing);
-    addPieceToBoard(board, squaresDOM, 5, PieceCode.BBishop);
-    addPieceToBoard(board, squaresDOM, 6, PieceCode.BKnight);
-    addPieceToBoard(board, squaresDOM, 7, PieceCode.BRook);
-    addPieceToBoard(board, squaresDOM, 8, PieceCode.BPawn);
-    addPieceToBoard(board, squaresDOM, 9, PieceCode.BPawn);
-    addPieceToBoard(board, squaresDOM, 10, PieceCode.BPawn);
-    addPieceToBoard(board, squaresDOM, 11, PieceCode.BPawn);
-    addPieceToBoard(board, squaresDOM, 12, PieceCode.BPawn);
-    addPieceToBoard(board, squaresDOM, 13, PieceCode.BPawn);
-    addPieceToBoard(board, squaresDOM, 14, PieceCode.BPawn);
-    addPieceToBoard(board, squaresDOM, 15, PieceCode.BPawn);
-    addPieceToBoard(board, squaresDOM, 48, PieceCode.WPawn);
-    addPieceToBoard(board, squaresDOM, 49, PieceCode.WPawn);
-    addPieceToBoard(board, squaresDOM, 50, PieceCode.WPawn);
-    addPieceToBoard(board, squaresDOM, 51, PieceCode.WPawn);
-    addPieceToBoard(board, squaresDOM, 52, PieceCode.WPawn);
-    addPieceToBoard(board, squaresDOM, 53, PieceCode.WPawn);
-    addPieceToBoard(board, squaresDOM, 54, PieceCode.WPawn);
-    addPieceToBoard(board, squaresDOM, 55, PieceCode.WPawn);
-    addPieceToBoard(board, squaresDOM, 56, PieceCode.WRook);
-    addPieceToBoard(board, squaresDOM, 57, PieceCode.WKnight);
-    addPieceToBoard(board, squaresDOM, 58, PieceCode.WBishop);
-    addPieceToBoard(board, squaresDOM, 59, PieceCode.WQueen);
-    addPieceToBoard(board, squaresDOM, 60, PieceCode.WKing);
-    addPieceToBoard(board, squaresDOM, 61, PieceCode.WBishop);
-    addPieceToBoard(board, squaresDOM, 62, PieceCode.WKnight);
-    addPieceToBoard(board, squaresDOM, 63, PieceCode.WRook);
+    renderFromFEN(STARTING_BOARD_FEN, board, squaresDOM)
 }
 
 initGame()

@@ -1,32 +1,27 @@
 export enum PieceType {
   None = 0, // empty square
-
-  // white and black pawns are treated as different types to account for their move-directions
-  WPawn = 1,
-  BPawn = 2,
-
-  Knight = 3,
-  Bishop = 4,
-  Rook = 5,
-  Queen = 6,
-  King = 7
+  Pawn = 1,
+  Knight = 2,
+  Bishop = 3,
+  Rook = 4,
+  Queen = 5,
+  King = 6
 }
 
 export enum PieceCode {
   Empty = PieceType.None,
+  Black = 8, // color code for recognizing if a piece is black
 
   // White pieces
-  WPawn = PieceType.WPawn,
+  WPawn = PieceType.Pawn,
   WKnight = PieceType.Knight,
   WBishop = PieceType.Bishop,
   WRook = PieceType.Rook,
   WQueen = PieceType.Queen,
   WKing = PieceType.King,
 
-  Black = 8, // color code for recognizing if a piece is black
-
   //Black Pieces
-  BPawn = PieceType.BPawn + PieceCode.Black,
+  BPawn = PieceType.Pawn + PieceCode.Black,
   BKnight = PieceType.Knight + PieceCode.Black,
   BBishop = PieceType.Bishop + PieceCode.Black,
   BRook = PieceType.Rook + PieceCode.Black,
@@ -49,3 +44,12 @@ export const PieceIcon: Record<number, string> = {
   [PieceCode.BQueen]: "&#9819;",
   [PieceCode.BKing]: "&#9818;",
 };
+
+export const FenPieces = {
+  "p": PieceType.Pawn,
+  "r": PieceType.Rook,
+  "n": PieceType.Knight,
+  "b": PieceType.Bishop,
+  "q": PieceType.Queen,
+  "k": PieceType.King
+}
