@@ -118,7 +118,13 @@
   function drop(ev) {
     ev.preventDefault();
     var data = ev.dataTransfer.getData("text");
-    ev.target.innerHTML = ""
+    if (ev.target.innerHTML !== "") {
+      ev.target.innerHTML = ""
+      new Audio('./assets/audio/capture.mp3').play();
+    }
+    else {
+      new Audio('./assets/audio/move-self.mp3').play();
+    }
     ev.target.appendChild(document.getElementById(data));
   }
 
