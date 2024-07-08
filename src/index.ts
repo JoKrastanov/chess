@@ -34,29 +34,29 @@ function addPieceToBoard(board: Board, squaresDOM: NodeListOf<Element>, squareId
 }
 
 function renderFromFEN(fen: FENString, board: Board, squaresDOM: NodeListOf<Element>) {
-    let boardIdx = 0
+    let boardIdx = 63
     for (let i = 0; i < fen.length; i++) {
         const curChar = fen.charAt(i)
         if (curChar === "/") continue;
         if (isFinite(parseInt(curChar))) {
-            boardIdx += parseInt(curChar)
+            boardIdx -= parseInt(curChar)
             continue
         }
         const pieceToRender = FenPieces[curChar.toLowerCase() as FENChar]
         // If it is upper case => black piece
         if (curChar === curChar.toUpperCase()) {
-            addPieceToBoard(board, squaresDOM, boardIdx, pieceToRender + 8);
-        }
-        else {
             addPieceToBoard(board, squaresDOM, boardIdx, pieceToRender + 0);
         }
-        boardIdx++
+        else {
+            addPieceToBoard(board, squaresDOM, boardIdx, pieceToRender + 8);
+        }
+        boardIdx--
     }
 }
 
 function renderBoard(board: Board) {
     const squaresDOM = document.querySelectorAll(".square")
-    renderFromFEN(STARTING_BOARD_FEN, board, squaresDOM)
+    renderFromFEN("8/5k2/3p4/1p1Pp2p/pP2Pp1P/P4P1K/8/8", board, squaresDOM)
 }
 
 initGame()
