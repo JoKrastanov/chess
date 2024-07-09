@@ -12,23 +12,29 @@ function initGame() {
 }
 
 function renderFromFEN(fen: FENString, board: Board) {
-    let squareIdx = 63
+    let rank = 7
+    let file = 0
     for (let i = 0; i < fen.length; i++) {
         const curChar = fen.charAt(i)
-        if (curChar === "/") continue;
+        if (curChar === "/") {
+            file = 0
+            rank--
+            continue
+        }
         if (isFinite(parseInt(curChar))) {
-            squareIdx -= parseInt(curChar)
+            file += parseInt(curChar)
             continue
         }
         const pieceToRender = FenPieces[curChar.toLowerCase() as FENChar]
-        // If it is upper case => black piece
+        const squareIdx = rank * 8 + file
+        // If it is upper case => white piece
         if (curChar === curChar.toUpperCase()) {
             board.addPiece(squareIdx, pieceToRender + 0);
         }
         else {
             board.addPiece(squareIdx, pieceToRender + 8);
         }
-        squareIdx--
+        file++
     }
 }
 

@@ -49,12 +49,13 @@ export class Board {
   }
 
   drawSquares(): void {
-    for (let rank = 0; rank < 8; rank++) {
+    for (let rank = 8; rank > 0; rank--) {
       const rankDiv = document.createElement("div");
       rankDiv.className = "rank"
       this.boardDOM.appendChild(rankDiv)
-      for (let file = 0; file < 8; file++) {
+      for (let file = 8; file > 0; file--) {
         const squareDiv = document.createElement("div")
+        squareDiv.id = (rank * 8 - file).toString()
         squareDiv.className = "square"
         squareDiv.ondrop = drop
         squareDiv.ondragover = allowDrop
@@ -64,12 +65,14 @@ export class Board {
   }
 
   addPiece(squareIdx: number, piece: PieceCode): void {
-    const squareDOM = this.squaresDOM[this.squaresDOM.length - 1 - squareIdx]
+    const squareDOM = Array.from(this.squaresDOM).find(sq => sq.id === squareIdx.toString())
+    if (!squareDOM) return
+
     const pieceDOM = document.createElement("span")
     this.squares[squareIdx] = piece
 
     pieceDOM.className = "piece"
-    pieceDOM.id = squareIdx.toString()
+    pieceDOM.id = `${piece}_${squareIdx}`
     pieceDOM.innerHTML = PieceIcon[piece]
 
     squareDOM.appendChild(pieceDOM)

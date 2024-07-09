@@ -1,13 +1,19 @@
+import { PieceCode, PieceType } from "./types/piece";
+
 const moveSound = new Audio('../../assets/audio/move-self.mp3');
 const captureSound = new Audio('../../assets/audio/capture.mp3');
 
 export function addPieceEventListeners(boardDOM: Element, pieceDOM: HTMLSpanElement) {
     pieceDOM.draggable = true;
-    pieceDOM.ondragstart = drag;
+    pieceDOM.ondragstart = drag
 }
 
-function drag(e: any) {
-    e.dataTransfer.setData("text", e.target.id);
+function drag(e: DragEvent) {
+    if(!e.dataTransfer || !e.target) return
+    const target = (<HTMLSpanElement>e.target)
+    e.dataTransfer.setData("text", target.id);
+    const [piece, square] = target.id.split("_") as unknown as [number, number]
+    console.log(PieceCode[piece], square)
 }
 
 export function drop(ev: any) {
