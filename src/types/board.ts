@@ -1,6 +1,6 @@
-import { addPieceEventListeners, allowDrop, drop } from "../utils";
+import { allowDrop, createBoardPiece, drop } from "../utils";
 import { EdgeMap } from "./edgeMap";
-import { PieceCode, PieceIcon } from "./piece";
+import { PieceCode } from "./piece";
 
 const movementOffsets = [8, -8, 1, -1, 7, -7, 9, 9]
 
@@ -50,16 +50,14 @@ export class Board {
 
   drawSquares(): void {
     for (let rank = 8; rank > 0; rank--) {
-      const rankDiv = document.createElement("div");
-      rankDiv.className = "rank"
-      this.boardDOM.appendChild(rankDiv)
       for (let file = 8; file > 0; file--) {
         const squareDiv = document.createElement("div")
+        const color = (rank + file) % 2 === 0 ? "white" : "black"
         squareDiv.id = (rank * 8 - file).toString()
-        squareDiv.className = "square"
+        squareDiv.className = "square " + color
         squareDiv.ondrop = drop
         squareDiv.ondragover = allowDrop
-        rankDiv.appendChild(squareDiv)
+        this.boardDOM.appendChild(squareDiv)
       }
     }
   }
@@ -68,18 +66,8 @@ export class Board {
     const squareDOM = Array.from(this.squaresDOM).find(sq => sq.id === squareIdx.toString())
     if (!squareDOM) return
 
-    const pieceDOM = document.createElement("span")
     this.squares[squareIdx] = piece
-
-    pieceDOM.className = "piece"
-    pieceDOM.id = `${piece}_${squareIdx}`
-    pieceDOM.innerHTML = PieceIcon[piece]
-
+    const pieceDOM = createBoardPiece(piece, squareIdx)
     squareDOM.appendChild(pieceDOM)
-    addPieceEventListeners(this.boardDOM, pieceDOM)
-  }
-
-  movePiece(squareOrigin: number) {
-
   }
 }

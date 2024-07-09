@@ -31,18 +31,18 @@ export enum PieceCode {
 
 // HTML (dec) code for rendering the chess piece icons
 export const PieceIcon: Record<number, string> = {
-  [PieceCode.WPawn]: "&#9817;",
-  [PieceCode.WKnight]: "&#9816;",
-  [PieceCode.WBishop]: "&#9815;",
-  [PieceCode.WRook]: "&#9814;",
-  [PieceCode.WQueen]: "&#9813;",
-  [PieceCode.WKing]: "&#9812;",
-  [PieceCode.BPawn]: "&#9823;",
-  [PieceCode.BKnight]: "&#9822;",
-  [PieceCode.BBishop]: "&#9821;",
-  [PieceCode.BRook]: "&#9820;",
-  [PieceCode.BQueen]: "&#9819;",
-  [PieceCode.BKing]: "&#9818;",
+  [PieceCode.WPawn]: "./assets/pieces/pawn-w.svg",
+  [PieceCode.WKnight]: "./assets/pieces/knight-w.svg",
+  [PieceCode.WBishop]: "./assets/pieces/bishop-w.svg",
+  [PieceCode.WRook]: "./assets/pieces/rook-w.svg",
+  [PieceCode.WQueen]: "./assets/pieces/queen-w.svg",
+  [PieceCode.WKing]: "./assets/pieces/king-w.svg",
+  [PieceCode.BPawn]: "./assets/pieces/pawn-b.svg",
+  [PieceCode.BKnight]: "./assets/pieces/knight-b.svg",
+  [PieceCode.BBishop]: "./assets/pieces/bishop-b.svg",
+  [PieceCode.BRook]: "./assets/pieces/rook-b.svg",
+  [PieceCode.BQueen]: "./assets/pieces/queen-b.svg",
+  [PieceCode.BKing]: "./assets/pieces/king-b.svg",
 };
 
 export const FenPieces = {

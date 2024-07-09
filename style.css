@@ -10,67 +10,23 @@ body {
   margin-inline: auto;
   margin-top: 10vh;
   border-radius: 1%;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(8, auto);
   flex-direction: column;
-  overflow: hidden;
-  position: relative;
-}
-
-.rank {
-  display: flex;
 }
 
 .square {
   width: 10vh;
   height: 10vh;
-  float: left;
+  position: relative;
 }
 
-.rank:nth-child(even) .square:nth-child(odd),
-.rank:nth-child(odd) .square:nth-child(even) {
-  background-color: rgb(86, 138, 78);
-}
-
-.rank:nth-child(even) .square:nth-child(even),
-.rank:nth-child(odd) .square:nth-child(odd) {
+.square.white {
   background-color: rgb(231, 222, 213);
 }
 
-.files,
-.ranks {
-  position: absolute;
-  font-weight: 600;
-  font-size: 22px;
-  user-select: none;
-}
-
-.ranks {
-  padding-left: 2px;
-
-  p {
-    height: 10vh;
-    margin: 0;
-    color: rgb(231, 222, 213);
-  }
-
-  p:nth-child(odd) {
-    color: rgb(86, 138, 78);
-  }
-}
-
-.files {
-  display: flex;
-  bottom: -2vh;
-  padding-left: 8vh;
-
-  p {
-    width: 10vh;
-    color: rgb(86, 138, 78);
-  }
-
-  p:nth-child(odd) {
-    color: rgb(231, 222, 213);
-  }
+.square.black {
+  background-color: rgb(86, 138, 78);
 }
 
 .piece {
@@ -85,6 +41,18 @@ body {
   padding: 0;
   position: absolute;
   z-index: 100;
-  user-select: none;
   text-align: center;
+}
+
+.piece > img {
+  height: 90%;
+  width: auto;
+  position: absolute;
+  pointer-events: none;
+  z-index: 1; 
+  -webkit-user-drag: none;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
 }
