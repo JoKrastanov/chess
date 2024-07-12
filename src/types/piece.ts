@@ -53,3 +53,8 @@ export const FenPieces = {
   "q": PieceType.Queen,
   "k": PieceType.King
 }
+
+export enum PieceColor {
+  White,
+  Black
+}
