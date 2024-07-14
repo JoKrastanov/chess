@@ -154,7 +154,7 @@ export class Board {
     if (leftDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(leftDiagonalSquarePiece) !== getPieceColor(piece)) {
       moves.push({ startSquare: startSquare, targetSquare: startSquare + pawnOffsets[1] })
     }
-    if (rightDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(leftDiagonalSquarePiece) !== getPieceColor(piece)) {
+    if (rightDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(rightDiagonalSquarePiece) !== getPieceColor(piece)) {
       moves.push({ startSquare: startSquare, targetSquare: startSquare + pawnOffsets[2] })
     }
     if (this.isFirstPawnMove(startSquare, piece, pawnOffsets)) {
@@ -184,12 +184,15 @@ export class Board {
   }
 
   makeMove(piece: PieceCode, origin: number, target: Element): boolean {
-    const targetSquare = parseInt(target.id)
+    let targetSquare = parseInt(target.id)
     const targetIsOccupied = target.id.includes("_")
-    if (!this.moves[origin].find(move => move.targetSquare == targetSquare)) return false
     if (targetIsOccupied) {
-      console.log("capture")
+      const [targetPiece, targetSquare] = target.id.split("_") as unknown as [number, number]
+      if (!this.moves[origin].find(move => move.targetSquare == targetSquare)) return false
+      this.squares[origin] = PieceCode.Empty
+      this.squares[targetSquare] = parseInt(piece.toString())
     } else {
+      if (!this.moves[origin].find(move => move.targetSquare == targetSquare)) return false
       this.squares[origin] = PieceCode.Empty
       this.squares[targetSquare] = parseInt(piece.toString())
     }

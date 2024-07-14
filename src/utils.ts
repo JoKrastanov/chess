@@ -22,21 +22,26 @@ export function drop(ev: any, board: Board) {
     if (!pieceDOM) return
     const [piece, origin] = pieceDOM.id.split("_") as unknown as [PieceCode, number]
     let target = ev.target
-    if (document.getElementById(data) == ev.target) {
+    if (pieceDOM == ev.target) {
         return
     }
     const continueWithMove = board.makeMove(piece, <number>origin, target)
     if (!continueWithMove) return
-
-    if (ev.target.innerHTML !== "") {
-        ev.target.innerHTML = ""
+    if (ev.target.id.includes("_")) {
+        const [targetPiece, targetSquare] = ev.target.id.split("_")
+        document.getElementById(ev.target.id)?.remove()
+        target = document.getElementById(targetSquare)
         captureSound.play();
     }
     else {
         moveSound.play();
     }
-    ev.target.appendChild(document.getElementById(data));
-    pieceDOM.id = `${piece}_${ev.target.id}`
+    target.appendChild(pieceDOM);
+    let targetId = target.id
+    if (targetId.includes("_")) {
+        targetId = targetId.split("_")[1]
+    }
+    pieceDOM.id = `${piece}_${targetId}`
 
 }
 
@@ -49,7 +54,6 @@ function drag(e: DragEvent, board: Board) {
     Array.from(board.squaresDOM).find(sq => sq.id === allowedMovesForPiece[0].startSquare.toString())?.classList.add("origin")
     allowedMovesForPiece.forEach(move => {
         const square = Array.from(board.squaresDOM).find(sq => sq.id === move.targetSquare.toString())
-        console.log(square)
         if (!square) return
         square.classList.add("red")
     })
