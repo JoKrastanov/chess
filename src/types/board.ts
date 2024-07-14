@@ -2,6 +2,16 @@ import { addPieceEventListeners, allowDrop, computeNrOfSquaresToEdge, drop, getP
 import { Move } from "./move";
 import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./piece";
 
+// TODO: FEATURES TO IMPLEMENT
+/*
+  * Check
+  * Mate
+  * Castling
+  * Pawn promotion
+  * Eval
+  * En passant
+*/
+
 const slidingMovementOffsets = [8, -8, -1, 1, 7, -7, 9, -9]
 const knightMovementOffsets = [15, -17, 17, -15, 6, -10, -6, 10]
 
