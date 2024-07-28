@@ -4,7 +4,10 @@ import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./piece"
 
 // TODO: FEATURES TO IMPLEMENT
 /*
+  * Оverflowing pieces
   * Check
+  * Check legal moves
+  * Pinned pieces check
   * Mate
   * Castling
   * Pawn promotion
@@ -13,7 +16,7 @@ import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./piece"
 */
 
 const slidingMovementOffsets = [8, -8, -1, 1, 7, -7, 9, -9]
-const knightMovementOffsets = [15, -17, 17, -15, 6, -10, -6, 10]
+const knightMovementOffsets = [17, -15, 15, -17, 6, -10, -6, 10]
 
 type FENString = string
 type FENChar = "r" | "n" | "b" | "q" | "k"
@@ -26,6 +29,7 @@ export class Board {
   moves: Record<number, Move[]>
   nrOfSquaresToEdge: number[][];
   info: HTMLParagraphElement
+  isInCheck: boolean
 
   constructor(fen: string) {
     this.info = document.getElementsByClassName("info")[0] as HTMLParagraphElement
@@ -38,6 +42,7 @@ export class Board {
     this.renderFromFEN(fen)
     this.moves = this.generateLegalMoves()
     this.info.innerHTML = "White to paly"
+    this.isInCheck = false;
   }
 
   renderFromFEN(fen: FENString) {
@@ -107,8 +112,12 @@ export class Board {
     return pieceDOM
   }
 
-  // TODO: Prevent pieces from overflowing to the other side of the board
+  getMovesForPiece(piece: PieceCode, moves?: Move) { }
+
   generateLegalMoves(): Record<number, Move[]> {
+    if (this.isInCheck) {
+      //TODO: Implement check legal moves
+    }
     const moves: Record<number, Move[]> = {}
     for (let startSquare = 0; startSquare < 64; startSquare++) {
       moves[startSquare] = []
@@ -148,6 +157,7 @@ export class Board {
 
   generateKnightMoves(startSquare: number, piece: PieceCode, moves: Move[]) {
     for (let dirIdx = 0; dirIdx < 8; dirIdx++) {
+      if (this.nrOfSquaresToEdge[startSquare][dirIdx] < 1) continue
       const targetSquare = startSquare + knightMovementOffsets[dirIdx]
       if (this.squares[targetSquare] !== PieceCode.Empty && getPieceColor(this.squares[targetSquare]) === getPieceColor(piece)) continue
       moves.push({ startSquare: startSquare, targetSquare: targetSquare })
@@ -173,7 +183,7 @@ export class Board {
   }
 
   isFirstPawnMove(startSquare: number, piece: PieceCode, pawnOffsets: number[]) {
-    if (this.isPawnOnStartRank(startSquare, getPieceColor(piece)) && this.squares[startSquare + pawnOffsets[3]] === PieceCode.Empty) return true
+    if (this.isPawnOnStartRank(startSquare, getPieceColor(piece)) && this.squares[startSquare + pawnOffsets[3]] === PieceCode.Empty && this.squares[startSquare + pawnOffsets[0]] === PieceCode.Empty) return true
     return false
   }
 
@@ -193,6 +203,10 @@ export class Board {
     }
   }
 
+  movePutsOppositeColorInCheck(piece: PieceCode, targetSquare: number): boolean {
+    return false
+  }
+
   makeMove(piece: PieceCode, origin: number, target: Element): boolean {
     let targetSquare = parseInt(target.id)
     const targetIsOccupied = target.id.includes("_")
@@ -207,6 +221,9 @@ export class Board {
       this.squares[targetSquare] = parseInt(piece.toString())
     }
     this.colorToMove = 1 - this.colorToMove // change color to move 
+    if (this.movePutsOppositeColorInCheck(piece, targetSquare)) {
+      this.isInCheck = true;
+    }
     this.moves = this.generateLegalMoves()
     if (this.colorToMove === 0) {
       this.info.innerHTML = "White to paly"
