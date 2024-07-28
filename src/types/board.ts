@@ -1,4 +1,5 @@
-import { addPieceEventListeners, allowDrop, computeNrOfSquaresToEdge, drop, getPieceColor, isKnight, isPawn, isSlidingPiece, pieceIsType } from "../utils";
+import { addPieceEventListeners, allowDrop, computeNrOfSquaresToEdge, drop, getPieceColor, isKnight, isPawn, isSlidingPiece, knightMovementOffsets, pieceIsType, slidingMovementOffsets } from "../utils";
+import { FENChar, FENString } from "./fen";
 import { Move } from "./move";
 import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./piece";
 
@@ -11,15 +12,9 @@ import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./piece"
   * Mate
   * Castling
   * Pawn promotion
-  * Eval
   * En passant
+  * Eval
 */
-
-const slidingMovementOffsets = [8, -8, -1, 1, 7, -7, 9, -9]
-const knightMovementOffsets = [17, -15, 15, -17, 6, -10, -6, 10]
-
-type FENString = string
-type FENChar = "r" | "n" | "b" | "q" | "k"
 
 export class Board {
   boardDOM: Element;
@@ -211,7 +206,7 @@ export class Board {
     let targetSquare = parseInt(target.id)
     const targetIsOccupied = target.id.includes("_")
     if (targetIsOccupied) {
-      const [targetPiece, targetSquare] = target.id.split("_") as unknown as [number, number]
+      const targetSquare = target.id.split("_")[1] as unknown as number
       if (!this.moves[origin].find(move => move.targetSquare == targetSquare)) return false
       this.squares[origin] = PieceCode.Empty
       this.squares[targetSquare] = parseInt(piece.toString())

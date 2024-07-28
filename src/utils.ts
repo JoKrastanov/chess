@@ -1,6 +1,9 @@
 import { Board } from "./types/board";
 import { PieceCode, PieceColor, PieceType } from "./types/piece";
 
+export const slidingMovementOffsets = [8, -8, -1, 1, 7, -7, 9, -9]
+export const knightMovementOffsets = [17, -15, 15, -17, 6, -10, -6, 10]
+
 const moveSound = new Audio('../../assets/audio/move-self.mp3');
 const captureSound = new Audio('../../assets/audio/capture.mp3');
 
@@ -28,7 +31,7 @@ export function drop(ev: any, board: Board) {
     const continueWithMove = board.makeMove(piece, <number>origin, target)
     if (!continueWithMove) return
     if (ev.target.id.includes("_")) {
-        const [targetPiece, targetSquare] = ev.target.id.split("_")
+        const targetSquare = ev.target.id.split("_")[1]
         document.getElementById(ev.target.id)?.remove()
         target = document.getElementById(targetSquare)
         captureSound.play();
