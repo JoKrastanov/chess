@@ -4,8 +4,9 @@ import { PieceCode, PieceColor, PieceType } from "./types/piece";
 export const slidingMovementOffsets = [8, -8, -1, 1, 7, -7, 9, -9]
 export const knightMovementOffsets = [17, -15, 15, -17, 6, -10, -6, 10]
 
-const moveSound = new Audio('../../assets/audio/move-self.mp3');
-const captureSound = new Audio('../../assets/audio/capture.mp3');
+export const moveSound = new Audio('../../assets/audio/move-self.mp3');
+export const captureSound = new Audio('../../assets/audio/capture.mp3');
+export const checkSound = new Audio('../../assets/audio/move-check.mp3');
 
 export function addPieceEventListeners(pieceDOM: HTMLSpanElement, board: Board) {
     pieceDOM.draggable = true;
@@ -34,10 +35,6 @@ export function drop(ev: any, board: Board) {
         const targetSquare = ev.target.id.split("_")[1]
         document.getElementById(ev.target.id)?.remove()
         target = document.getElementById(targetSquare)
-        captureSound.play();
-    }
-    else {
-        moveSound.play();
     }
     target.appendChild(pieceDOM);
     let targetId = target.id
@@ -45,7 +42,6 @@ export function drop(ev: any, board: Board) {
         targetId = targetId.split("_")[1]
     }
     pieceDOM.id = `${piece}_${targetId}`
-
 }
 
 function drag(e: DragEvent, board: Board) {
@@ -113,4 +109,67 @@ export function isPawn(piece: PieceCode) {
 
 export function allowDrop(ev: any) {
     ev.preventDefault();
+}
+
+export function getOppositeColor(colorToMove: number) {
+    return 8 - colorToMove;
+}
+
+export function targetSquareCausesKnightAHFileWrap(startSquare: number, targetSquare: number) {
+    return (isAFile(startSquare) && getKnightAFileWrappingOffsets(startSquare).includes(targetSquare))
+        || (isBFile(startSquare) && getKnightBFileWrappingOffsets(startSquare).includes(targetSquare))
+        || (isGFile(startSquare) && getKnightGFileWrappingOffsets(startSquare).includes(targetSquare))
+        || (isHFile(startSquare) && getKnightHFileWrappingOffsets(startSquare).includes(targetSquare))
+}
+
+export function getKnightAFileWrappingOffsets(square: number) {
+    return [
+        square + knightMovementOffsets[0],
+        square + knightMovementOffsets[1],
+        square + knightMovementOffsets[6],
+        square + knightMovementOffsets[7]
+    ]
+}
+
+export function getKnightBFileWrappingOffsets(square: number) {
+    return [
+        square + knightMovementOffsets[6],
+        square + knightMovementOffsets[7],
+    ]
+}
+
+export function getKnightHFileWrappingOffsets(square: number) {
+    return [
+        square + knightMovementOffsets[2],
+        square + knightMovementOffsets[3],
+        square + knightMovementOffsets[4],
+        square + knightMovementOffsets[5]
+    ]
+}
+
+export function getKnightGFileWrappingOffsets(square: number) {
+    return [
+        square + knightMovementOffsets[4],
+        square + knightMovementOffsets[5],
+    ]
+}
+
+export function isAFile(square: number) {
+    return square % 8 === 7;
+}
+
+export function isBFile(square: number) {
+    return square % 8 === 6;
+}
+
+export function isGFile(square: number) {
+    return square % 8 === 1;
+}
+
+export function isHFile(square: number) {
+    return square % 8 === 0;
+}
+
+export function playSound(audio: HTMLAudioElement) {
+    audio.play();
 }
