@@ -55,6 +55,6 @@ export const FenPieces = {
 }
 
 export enum PieceColor {
-  White,
-  Black
+  White = 0,
+  Black = 8
 }
