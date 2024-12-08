@@ -1,18 +1,37 @@
-import { addPieceEventListeners, allowDrop, computeNrOfSquaresToEdge, drop, getPieceColor, isKnight, isPawn, isSlidingPiece, knightMovementOffsets, pieceIsType, slidingMovementOffsets } from "../utils";
+import {
+  addPieceEventListeners,
+  allowDrop,
+  captureSound,
+  checkSound,
+  computeNrOfSquaresToEdge,
+  drop,
+  getOppositeColor,
+  getPieceColor,
+  isAFile,
+  isHFile,
+  isKnight,
+  isPawn,
+  isSlidingPiece,
+  knightMovementOffsets,
+  moveSound,
+  pieceIsType,
+  playSound,
+  slidingMovementOffsets,
+  targetSquareCausesKnightAHFileWrap
+} from "../utils";
 import { FENChar, FENString } from "./fen";
 import { Move } from "./move";
 import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./piece";
 
 // TODO: FEATURES TO IMPLEMENT
 /*
-  * Оverflowing pieces
-  * Check
   * Check legal moves
   * Pinned pieces check
   * Mate
   * Castling
   * Pawn promotion
   * En passant
+  * Bitboards ???
   * Eval
 */
 
@@ -107,7 +126,19 @@ export class Board {
     return pieceDOM
   }
 
-  getMovesForPiece(piece: PieceCode, moves?: Move) { }
+  getMovesForPiece(piece: PieceCode, startSquare: number, moves: Record<number, Move[]>) {
+    if (piece === PieceCode.Empty) return
+    if (getPieceColor(piece) !== this.colorToMove) return;
+    if (isSlidingPiece(piece)) {
+      this.generateSlidingMoves(startSquare, piece, moves[startSquare])
+    } else if (isKnight(piece)) {
+      this.generateKnightMoves(startSquare, piece, moves[startSquare])
+    } else if (isPawn(piece)) {
+      this.generatePawnMoves(startSquare, piece, moves[startSquare])
+    } else { // is King
+      this.generateKingMoves(startSquare, moves[startSquare])
+    }
+  }
 
   generateLegalMoves(): Record<number, Move[]> {
     if (this.isInCheck) {
@@ -117,17 +148,8 @@ export class Board {
     for (let startSquare = 0; startSquare < 64; startSquare++) {
       moves[startSquare] = []
       const piece = this.squares[startSquare]
-      if (piece === PieceCode.Empty) continue
-      if (getPieceColor(piece) !== this.colorToMove) continue;
-      if (isSlidingPiece(piece)) {
-        this.generateSlidingMoves(startSquare, piece, moves[startSquare])
-      } else if (isKnight(piece)) {
-        this.generateKnightMoves(startSquare, piece, moves[startSquare])
-      } else if (isPawn(piece)) {
-        this.generatePawnMoves(startSquare, piece, moves[startSquare])
-      } else { // is King
-        this.generateKingMoves(startSquare, moves[startSquare])
-      }
+      if(piece === PieceCode.Empty) continue;
+      this.getMovesForPiece(piece, startSquare, moves);
     }
     return moves
   }
@@ -152,9 +174,9 @@ export class Board {
 
   generateKnightMoves(startSquare: number, piece: PieceCode, moves: Move[]) {
     for (let dirIdx = 0; dirIdx < 8; dirIdx++) {
-      if (this.nrOfSquaresToEdge[startSquare][dirIdx] < 1) continue
       const targetSquare = startSquare + knightMovementOffsets[dirIdx]
       if (this.squares[targetSquare] !== PieceCode.Empty && getPieceColor(this.squares[targetSquare]) === getPieceColor(piece)) continue
+      if (targetSquareCausesKnightAHFileWrap(startSquare, targetSquare)) continue
       moves.push({ startSquare: startSquare, targetSquare: targetSquare })
     }
   }
@@ -166,10 +188,10 @@ export class Board {
     }
     const leftDiagonalSquarePiece = this.squares[startSquare + pawnOffsets[1]]
     const rightDiagonalSquarePiece = this.squares[startSquare + pawnOffsets[2]]
-    if (leftDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(leftDiagonalSquarePiece) !== getPieceColor(piece)) {
+    if (leftDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(leftDiagonalSquarePiece) !== getPieceColor(piece) && !isHFile(startSquare)) {
       moves.push({ startSquare: startSquare, targetSquare: startSquare + pawnOffsets[1] })
     }
-    if (rightDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(rightDiagonalSquarePiece) !== getPieceColor(piece)) {
+    if (rightDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(rightDiagonalSquarePiece) !== getPieceColor(piece) && !isAFile(startSquare)) {
       moves.push({ startSquare: startSquare, targetSquare: startSquare + pawnOffsets[2] })
     }
     if (this.isFirstPawnMove(startSquare, piece, pawnOffsets)) {
@@ -178,13 +200,18 @@ export class Board {
   }
 
   isFirstPawnMove(startSquare: number, piece: PieceCode, pawnOffsets: number[]) {
-    if (this.isPawnOnStartRank(startSquare, getPieceColor(piece)) && this.squares[startSquare + pawnOffsets[3]] === PieceCode.Empty && this.squares[startSquare + pawnOffsets[0]] === PieceCode.Empty) return true
+    if (this.isPawnOnStartRank(startSquare, getPieceColor(piece))
+      && this.squares[startSquare + pawnOffsets[3]] === PieceCode.Empty
+      && this.squares[startSquare + pawnOffsets[0]] === PieceCode.Empty)
+      return true
     return false
   }
 
   isPawnOnStartRank(startSquare: number, color: PieceColor) {
-    if (color === PieceColor.White && startSquare > 7 && startSquare < 16) return true
-    else if (color === PieceColor.Black && startSquare > 47 && startSquare < 56) return true
+    if (
+      (color === PieceColor.White && startSquare > 7 && startSquare < 16)
+      || (color === PieceColor.Black && startSquare > 47 && startSquare < 56))
+      return true
     return false
   }
 
@@ -198,27 +225,32 @@ export class Board {
     }
   }
 
-  movePutsOppositeColorInCheck(piece: PieceCode, targetSquare: number): boolean {
-    return false
+  movePutsOppositeColorInCheck(): boolean {
+    const moves = this.generateLegalMoves()
+    return Object.keys(moves).some(moveKey => {
+      return moves[Number(moveKey)].some(move => {
+          return this.squares[move.targetSquare] === PieceType.King + getOppositeColor(this.colorToMove)
+      })
+    })
   }
 
   makeMove(piece: PieceCode, origin: number, target: Element): boolean {
     let targetSquare = parseInt(target.id)
+    let soundToPlay = moveSound;
     const targetIsOccupied = target.id.includes("_")
     if (targetIsOccupied) {
-      const targetSquare = target.id.split("_")[1] as unknown as number
-      if (!this.moves[origin].find(move => move.targetSquare == targetSquare)) return false
-      this.squares[origin] = PieceCode.Empty
-      this.squares[targetSquare] = parseInt(piece.toString())
-    } else {
-      if (!this.moves[origin].find(move => move.targetSquare == targetSquare)) return false
-      this.squares[origin] = PieceCode.Empty
-      this.squares[targetSquare] = parseInt(piece.toString())
+      targetSquare = parseInt(target.id.split("_")[1])
+      soundToPlay = captureSound;
     }
-    this.colorToMove = 1 - this.colorToMove // change color to move 
-    if (this.movePutsOppositeColorInCheck(piece, targetSquare)) {
+    if (!this.moves[origin].find(move => move.targetSquare == targetSquare)) return false
+    this.squares[origin] = PieceCode.Empty
+    this.squares[targetSquare] = parseInt(piece.toString())
+    if (this.movePutsOppositeColorInCheck()) {
+      soundToPlay = checkSound
       this.isInCheck = true;
     }
+    playSound(soundToPlay);
+    this.colorToMove = getOppositeColor(this.colorToMove) // change color to move 
     this.moves = this.generateLegalMoves()
     if (this.colorToMove === 0) {
       this.info.innerHTML = "White to paly"
@@ -228,3 +260,4 @@ export class Board {
     return true;
   }
 }
+
