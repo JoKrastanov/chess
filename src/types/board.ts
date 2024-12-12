@@ -22,9 +22,12 @@ import {
 import { FENChar, FENString } from "./fen";
 import { Move } from "./move";
 import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./piece";
+import { Square } from "./square";
 
 // TODO: FEATURES TO IMPLEMENT
 /*
+  * Keep track of all legal moves PER COLOR
+  * Keep track of all attacked squares per color
   * Check legal moves
   * Pinned pieces check
   * Mate
@@ -38,7 +41,7 @@ import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./piece"
 export class Board {
   boardDOM: Element;
   squaresDOM: NodeListOf<HTMLDivElement>;
-  squares: number[];
+  squares: Square[];
   colorToMove: PieceColor;
   moves: Record<number, Move[]>
   nrOfSquaresToEdge: number[][];
@@ -47,8 +50,8 @@ export class Board {
 
   constructor(fen: string) {
     this.info = document.getElementsByClassName("info")[0] as HTMLParagraphElement
-    this.squares = Array(64).fill(PieceCode.Empty);
-    this.colorToMove = PieceColor.White // 0 - white, 1 - black
+    this.squares = Array(64).fill(undefined);
+    this.colorToMove = PieceColor.White
     this.boardDOM = document.querySelector(".board") || document.createElement("div")
     this.drawSquares()
     this.squaresDOM = document.querySelectorAll(".square")
@@ -90,9 +93,15 @@ export class Board {
     let that = this
     for (let rank = 8; rank > 0; rank--) {
       for (let file = 8; file > 0; file--) {
+        const idx = rank * 8 - file;
+        this.squares[idx] = new Square(
+          idx,
+          file,
+          rank
+        )
         const squareDiv = document.createElement("div")
         const color = (rank + file) % 2 === 0 ? "white" : "black"
-        squareDiv.id = (rank * 8 - file).toString()
+        squareDiv.id = idx.toString()
         squareDiv.className = "square " + color
         squareDiv.ondrop = function (ev: DragEvent) {
           drop(ev, that)
@@ -106,7 +115,7 @@ export class Board {
   addPiece(squareIdx: number, piece: PieceCode): void {
     const squareDOM = Array.from(this.squaresDOM).find(sq => sq.id === squareIdx.toString())
     if (!squareDOM) return
-    this.squares[squareIdx] = piece
+    this.squares[squareIdx].placePiece(piece)
     const pieceDOM = this.createBoardPiece(piece, squareIdx)
     squareDOM.appendChild(pieceDOM)
   }
@@ -147,8 +156,8 @@ export class Board {
     const moves: Record<number, Move[]> = {}
     for (let startSquare = 0; startSquare < 64; startSquare++) {
       moves[startSquare] = []
-      const piece = this.squares[startSquare]
-      if(piece === PieceCode.Empty) continue;
+      const piece = this.squares[startSquare]?.getPiece()
+      if (piece === PieceCode.Empty) continue;
       this.getMovesForPiece(piece, startSquare, moves);
     }
     return moves
@@ -160,7 +169,7 @@ export class Board {
     for (let dirIdx = startDirIndex; dirIdx < endDirIndex; dirIdx++) {
       for (let nrOfSquares = 0; nrOfSquares < this.nrOfSquaresToEdge[startSquare][dirIdx]; nrOfSquares++) {
         const targetSquare = startSquare + slidingMovementOffsets[dirIdx] * (nrOfSquares + 1)
-        const pieceOnTargetSquare = this.squares[targetSquare]
+        const pieceOnTargetSquare = this.squares[targetSquare]?.getPiece()
         // If we find a piece in a direction and it is our color we cannot go to it
         if (pieceOnTargetSquare !== PieceCode.Empty && getPieceColor(pieceOnTargetSquare) === this.colorToMove) break
 
@@ -175,7 +184,12 @@ export class Board {
   generateKnightMoves(startSquare: number, piece: PieceCode, moves: Move[]) {
     for (let dirIdx = 0; dirIdx < 8; dirIdx++) {
       const targetSquare = startSquare + knightMovementOffsets[dirIdx]
-      if (this.squares[targetSquare] !== PieceCode.Empty && getPieceColor(this.squares[targetSquare]) === getPieceColor(piece)) continue
+      const pieceOnTargetSquare = this.squares[targetSquare]?.getPiece()
+      if (
+        pieceOnTargetSquare !== PieceCode.Empty 
+        && getPieceColor(pieceOnTargetSquare) === getPieceColor(piece)
+      ) continue
+
       if (targetSquareCausesKnightAHFileWrap(startSquare, targetSquare)) continue
       moves.push({ startSquare: startSquare, targetSquare: targetSquare })
     }
@@ -183,11 +197,11 @@ export class Board {
 
   generatePawnMoves(startSquare: number, piece: PieceCode, moves: Move[]) {
     let pawnOffsets = getPieceColor(piece) === PieceColor.White ? [8, 7, 9, 16] : [-8, -9, -7, -16]
-    if (this.squares[startSquare + pawnOffsets[0]] === PieceCode.Empty) {
+    if (this.squares[startSquare + pawnOffsets[0]]?.getPiece() === PieceCode.Empty) {
       moves.push({ startSquare: startSquare, targetSquare: startSquare + pawnOffsets[0] })
     }
-    const leftDiagonalSquarePiece = this.squares[startSquare + pawnOffsets[1]]
-    const rightDiagonalSquarePiece = this.squares[startSquare + pawnOffsets[2]]
+    const leftDiagonalSquarePiece = this.squares[startSquare + pawnOffsets[1]]?.getPiece()
+    const rightDiagonalSquarePiece = this.squares[startSquare + pawnOffsets[2]]?.getPiece()
     if (leftDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(leftDiagonalSquarePiece) !== getPieceColor(piece) && !isHFile(startSquare)) {
       moves.push({ startSquare: startSquare, targetSquare: startSquare + pawnOffsets[1] })
     }
@@ -201,8 +215,8 @@ export class Board {
 
   isFirstPawnMove(startSquare: number, piece: PieceCode, pawnOffsets: number[]) {
     if (this.isPawnOnStartRank(startSquare, getPieceColor(piece))
-      && this.squares[startSquare + pawnOffsets[3]] === PieceCode.Empty
-      && this.squares[startSquare + pawnOffsets[0]] === PieceCode.Empty)
+      && this.squares[startSquare + pawnOffsets[3]]?.getPiece() === PieceCode.Empty
+      && this.squares[startSquare + pawnOffsets[0]]?.getPiece() === PieceCode.Empty)
       return true
     return false
   }
@@ -218,7 +232,7 @@ export class Board {
   generateKingMoves(startSquare: number, moves: Move[]) {
     for (let dirIdx = 0; dirIdx < 8; dirIdx++) {
       const targetSquare = startSquare + slidingMovementOffsets[dirIdx]
-      const pieceOnTargetSquare = this.squares[targetSquare]
+      const pieceOnTargetSquare = this.squares[targetSquare]?.getPiece()
       // If we find a piece in a direction and it is our color we cannot go to it
       if (pieceOnTargetSquare !== PieceCode.Empty && getPieceColor(pieceOnTargetSquare) === this.colorToMove) continue
       moves.push({ startSquare: startSquare, targetSquare: targetSquare })
@@ -229,7 +243,7 @@ export class Board {
     const moves = this.generateLegalMoves()
     return Object.keys(moves).some(moveKey => {
       return moves[Number(moveKey)].some(move => {
-          return this.squares[move.targetSquare] === PieceType.King + getOppositeColor(this.colorToMove)
+        return this.squares[move.targetSquare]?.getPiece() === PieceType.King + getOppositeColor(this.colorToMove)
       })
     })
   }
@@ -243,8 +257,8 @@ export class Board {
       soundToPlay = captureSound;
     }
     if (!this.moves[origin].find(move => move.targetSquare == targetSquare)) return false
-    this.squares[origin] = PieceCode.Empty
-    this.squares[targetSquare] = parseInt(piece.toString())
+    this.squares[origin].placePiece(PieceCode.Empty)
+    this.squares[targetSquare].placePiece(parseInt(piece.toString()))
     if (this.movePutsOppositeColorInCheck()) {
       soundToPlay = checkSound
       this.isInCheck = true;
