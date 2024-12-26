@@ -45,6 +45,11 @@ export function drop(ev: any, board: Board) {
 }
 
 function drag(e: DragEvent, board: Board) {
+    board.boardDOM.childNodes.forEach(squareNode => {
+        if (squareNode instanceof HTMLDivElement) {
+            squareNode.classList.remove("highlight")
+        }
+    })
     if (!e.dataTransfer || !e.target) return
     const target = (<HTMLSpanElement>e.target)
     const [piece, square] = target.id.split("_") as unknown as [number, number]
@@ -152,6 +157,11 @@ export function getKnightGFileWrappingOffsets(square: number) {
         square + knightMovementOffsets[4],
         square + knightMovementOffsets[5],
     ]
+}
+
+export function getPieceTypeFromCode(piece: PieceCode) {
+    if (piece >= 8) return piece - PieceColor.Black as PieceType
+    else return piece + PieceColor.White as PieceType
 }
 
 export function isAFile(square: number) {

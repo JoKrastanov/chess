@@ -30,6 +30,10 @@ body {
   background-color: rgb(231, 222, 213);
 }
 
+.square.highlight {
+  background-color: red !important;
+}
+
 .square.black {
   background-color: rgb(86, 138, 78);
 }
@@ -64,7 +68,7 @@ body {
   text-align: center;
 }
 
-.piece > img {
+.piece>img {
   height: 90%;
   width: auto;
   pointer-events: none;

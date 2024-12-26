@@ -28,6 +28,7 @@ import { Square } from "./square";
 /*
   * Keep track of all legal moves PER COLOR
   * Keep track of all attacked squares per color
+  * Keep track of direct check line to king
   * Check legal moves
   * Pinned pieces check
   * Mate
@@ -80,10 +81,10 @@ export class Board {
       const squareIdx = rank * 8 + file
       // If it is upper case => white piece
       if (curChar === curChar.toUpperCase()) {
-        this.addPiece(squareIdx, pieceToRender + 0);
+        this.addPiece(squareIdx, pieceToRender + PieceColor.White);
       }
       else {
-        this.addPiece(squareIdx, pieceToRender + 8);
+        this.addPiece(squareIdx, pieceToRender + PieceColor.Black);
       }
       file++
     }
@@ -107,6 +108,14 @@ export class Board {
           drop(ev, that)
         }
         squareDiv.ondragover = allowDrop
+        squareDiv.addEventListener('contextmenu', function (ev) {
+          ev.preventDefault();
+          if (squareDiv.classList.contains("highlight")) {
+            squareDiv.classList.remove("highlight")
+            return
+          }
+          squareDiv.classList.add("highlight")
+        }, false);
         this.boardDOM.appendChild(squareDiv)
       }
     }
@@ -186,7 +195,7 @@ export class Board {
       const targetSquare = startSquare + knightMovementOffsets[dirIdx]
       const pieceOnTargetSquare = this.squares[targetSquare]?.getPiece()
       if (
-        pieceOnTargetSquare !== PieceCode.Empty 
+        pieceOnTargetSquare !== PieceCode.Empty
         && getPieceColor(pieceOnTargetSquare) === getPieceColor(piece)
       ) continue
 
