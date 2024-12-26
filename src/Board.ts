@@ -18,18 +18,14 @@ import {
   playSound,
   slidingMovementOffsets,
   targetSquareCausesKnightAHFileWrap
-} from "../utils";
-import { FENChar, FENString } from "./fen";
-import { Move } from "./move";
-import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./piece";
-import { Square } from "./square";
+} from "./utils";
+import { FENChar, FENString } from "./types/FEN";
+import { Move } from "./types/Move";
+import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./types/Piece";
+import { Square } from "./types/Square";
 
 // TODO: FEATURES TO IMPLEMENT
 /*
-  * Keep track of all legal moves PER COLOR
-  * Keep track of all attacked squares per color
-  * Keep track of direct check line to king
-  * Check legal moves
   * Pinned pieces check
   * Mate
   * Castling
@@ -44,7 +40,9 @@ export class Board {
   squaresDOM: NodeListOf<HTMLDivElement>;
   squares: Square[];
   colorToMove: PieceColor;
-  moves: Record<number, Move[]>
+  moves: Record<number, Move[]>;
+  attackedSquaresByOpponent: Set<number>;
+  attackPathToKing: Set<number>;
   nrOfSquaresToEdge: number[][];
   info: HTMLParagraphElement
   isInCheck: boolean
@@ -53,6 +51,8 @@ export class Board {
     this.info = document.getElementsByClassName("info")[0] as HTMLParagraphElement
     this.squares = Array(64).fill(undefined);
     this.colorToMove = PieceColor.White
+    this.attackedSquaresByOpponent = new Set();
+    this.attackPathToKing = new Set();
     this.boardDOM = document.querySelector(".board") || document.createElement("div")
     this.drawSquares()
     this.squaresDOM = document.querySelectorAll(".square")

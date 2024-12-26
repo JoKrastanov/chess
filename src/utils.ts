@@ -1,5 +1,5 @@
-import { Board } from "./types/board";
-import { PieceCode, PieceColor, PieceType } from "./types/piece";
+import { Board } from "./Board";
+import { PieceCode, PieceColor, PieceType } from "./types/Piece";
 
 export const slidingMovementOffsets = [8, -8, -1, 1, 7, -7, 9, -9]
 export const knightMovementOffsets = [17, -15, 15, -17, 6, -10, -6, 10]

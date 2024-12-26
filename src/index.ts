@@ -1,4 +1,4 @@
-import { Board } from "./types/board";
+import { Board } from "./Board";
 
 const STARTING_BOARD_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 

@@ -1,4 +1,4 @@
-import { PieceCode } from "./piece";
+import { PieceCode } from "./Piece";
 
 export class Square {
     idx: number;
