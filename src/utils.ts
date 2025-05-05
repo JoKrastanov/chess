@@ -39,6 +39,7 @@ export function drop(ev: any, board: Board) {
         square.classList.remove("attack")
     })
     let data = ev.dataTransfer.getData("text");
+    if(data === "") return;
     let pieceDOM = document.getElementById(data)
     if (!pieceDOM) return
     const [piece, origin] = pieceDOM.id.split("_") as unknown as [PieceCode, number]

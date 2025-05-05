@@ -160,24 +160,31 @@ export class Board {
     return pieceDOM
   }
 
-  generateLegalMoves() {
-    this.moves = {
-      [PieceColor.White]: {},
-      [PieceColor.Black]: {}
-    };
-
+  resetBoardValues() {
+    this.moves[PieceColor.White] = {};
+    this.moves[PieceColor.Black] = {};
     this.attackedSquares[PieceColor.White].clear()
     this.attackedSquares[PieceColor.Black].clear()
+  }
 
+  handleDebugMode() {
+    if (DEBUG_MODE) {
+      console.log(this.attackedSquares)
+      this.colorAttackedSquares();
+      if (this.checkedColor) {
+        this.colorPathToKing();
+      }
+    }
+  }
+
+  generateLegalMoves() {
+    this.resetBoardValues();
     for (let startSquare = 0; startSquare < 64; startSquare++) {
       const piece = this.squares[startSquare]?.getPiece()
       if (piece === PieceCode.Empty) continue;
       this.getMovesForPiece(piece, startSquare);
     }
-    if (DEBUG_MODE) {
-      console.log(this.attackedSquares)
-      this.colorAttackedSquares();
-    }
+    this.handleDebugMode()
   }
 
   getMovesForPiece(piece: PieceCode, startSquare: number) {
@@ -309,6 +316,8 @@ export class Board {
   }
 
   makeMove(piece: PieceCode, origin: number, target: Element): boolean {
+    this.checkedColor = null;
+    this.isInCheck = false;
     let targetSquare = parseInt(target.id)
     let soundToPlay = moveSound;
     const targetIsOccupied = target.id.includes("_")
@@ -325,9 +334,6 @@ export class Board {
       this.checkInfo.innerHTML = "Check!"
       this.isInCheck = true;
       this.calculateAttackPathToOppositeKing(piece, targetSquare);
-      if (DEBUG_MODE) {
-        this.colorPathToKing();
-      }
     }
     playSound(soundToPlay);
     this.colorToMove = getOppositeColor(this.colorToMove)

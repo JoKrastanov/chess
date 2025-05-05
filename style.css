@@ -55,9 +55,6 @@ body {
   background-color: rgba(199, 50, 50, 0.85) !important;
 }
 
-.square.attack {
-  background-color: rgba(35, 28, 228, 0.333) !important;
-}
 
 .square.attacked-black {
   background-color: rgba(0, 0, 0, 0.333) !important;
@@ -65,6 +62,10 @@ body {
 
 .square.attacked-white {
   background-color: rgba(255, 255, 255, 0.333) !important;
+}
+
+.square.attack {
+  background-color: rgba(35, 28, 228, 0.333) !important;
 }
 
 .piece {
