@@ -3,7 +3,7 @@ body {
   background-color: rgb(48, 57, 57);
 }
 
-.info {
+.menu {
   position: absolute;
   color: rgb(231, 222, 213);
 }
@@ -24,6 +24,7 @@ body {
   width: 10vh;
   height: 10vh;
   position: relative;
+  border: solid black .2px;
 }
 
 .square.white {
@@ -52,6 +53,18 @@ body {
 
 .square.black.red {
   background-color: rgba(199, 50, 50, 0.85) !important;
+}
+
+.square.attack {
+  background-color: rgba(35, 28, 228, 0.333) !important;
+}
+
+.square.attacked-black {
+  background-color: rgba(0, 0, 0, 0.333) !important;
+}
+
+.square.attacked-white {
+  background-color: rgba(255, 255, 255, 0.333) !important;
 }
 
 .piece {

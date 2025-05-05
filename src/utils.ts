@@ -15,11 +15,28 @@ export function addPieceEventListeners(pieceDOM: HTMLSpanElement, board: Board) 
     }
 }
 
+export function getPawnOffsets(color: PieceColor): [number, number, number, number] {
+    return color === PieceColor.White ? [8, 7, 9, 16] : [-8, -9, -7, -16]
+}
+
+export function getSquareById(id: string, boardDOM: HTMLDivElement): HTMLDivElement | undefined {
+    let squareNodeDOM: HTMLDivElement | undefined = undefined;
+    boardDOM.childNodes.forEach(squareNode => {
+        if (squareNode instanceof HTMLDivElement) {
+            if (squareNode.id === id) {
+                squareNodeDOM = squareNode
+            }
+        }
+    })
+    return squareNodeDOM;
+}
+
 export function drop(ev: any, board: Board) {
     ev.preventDefault();
     board.squaresDOM.forEach(square => {
         square.classList.remove("red")
         square.classList.remove("origin")
+        square.classList.remove("attack")
     })
     let data = ev.dataTransfer.getData("text");
     let pieceDOM = document.getElementById(data)
@@ -54,8 +71,8 @@ function drag(e: DragEvent, board: Board) {
     const target = (<HTMLSpanElement>e.target)
     const [piece, square] = target.id.split("_") as unknown as [number, number]
     if (board.colorToMove !== getPieceColor(piece)) return
-    const allowedMovesForPiece = board.moves[square]
-    Array.from(board.squaresDOM).find(sq => sq.id === allowedMovesForPiece[0].startSquare.toString())?.classList.add("origin")
+    const allowedMovesForPiece = board.moves[board.colorToMove][square]
+    Array.from(board.squaresDOM).find(sq => sq.id === allowedMovesForPiece[0]?.startSquare.toString())?.classList.add("origin")
     allowedMovesForPiece.forEach(move => {
         const square = Array.from(board.squaresDOM).find(sq => sq.id === move.targetSquare.toString())
         if (!square) return
@@ -116,7 +133,7 @@ export function allowDrop(ev: any) {
     ev.preventDefault();
 }
 
-export function getOppositeColor(colorToMove: number) {
+export function getOppositeColor(colorToMove: number): PieceColor {
     return 8 - colorToMove;
 }
 

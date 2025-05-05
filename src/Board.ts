@@ -6,7 +6,9 @@ import {
   computeNrOfSquaresToEdge,
   drop,
   getOppositeColor,
+  getPawnOffsets,
   getPieceColor,
+  getSquareById,
   isAFile,
   isHFile,
   isKnight,
@@ -20,9 +22,10 @@ import {
   targetSquareCausesKnightAHFileWrap
 } from "./utils";
 import { FENChar, FENString } from "./types/FEN";
-import { Move } from "./types/Move";
 import { FenPieces, PieceCode, PieceColor, PieceIcon, PieceType } from "./types/Piece";
 import { Square } from "./types/Square";
+import { LegalMoves } from "./types/LegalMoves";
+import { AttackedSquares } from "./types/AttackedSquares";
 
 // TODO: FEATURES TO IMPLEMENT
 /*
@@ -31,34 +34,44 @@ import { Square } from "./types/Square";
   * Castling
   * Pawn promotion
   * En passant
-  * Bitboards ???
-  * Eval
 */
+const DEBUG_MODE = false;
 
 export class Board {
-  boardDOM: Element;
+  boardDOM: HTMLDivElement;
   squaresDOM: NodeListOf<HTMLDivElement>;
   squares: Square[];
   colorToMove: PieceColor;
-  moves: Record<number, Move[]>;
-  attackedSquaresByOpponent: Set<number>;
+  moves: LegalMoves;
+  attackedSquares: AttackedSquares;
   attackPathToKing: Set<number>;
+  checkedColor: PieceColor | null;
   nrOfSquaresToEdge: number[][];
   info: HTMLParagraphElement
+  checkInfo: HTMLParagraphElement
   isInCheck: boolean
 
   constructor(fen: string) {
     this.info = document.getElementsByClassName("info")[0] as HTMLParagraphElement
+    this.checkInfo = document.getElementsByClassName("check-info")[0] as HTMLParagraphElement
+    this.checkedColor = null;
     this.squares = Array(64).fill(undefined);
+    this.moves = {
+      [PieceColor.White]: {},
+      [PieceColor.Black]: {}
+    };
+    this.attackedSquares = {
+      [PieceColor.White]: new Set<number>(),
+      [PieceColor.Black]: new Set<number>(),
+    }
     this.colorToMove = PieceColor.White
-    this.attackedSquaresByOpponent = new Set();
     this.attackPathToKing = new Set();
     this.boardDOM = document.querySelector(".board") || document.createElement("div")
     this.drawSquares()
     this.squaresDOM = document.querySelectorAll(".square")
     this.nrOfSquaresToEdge = computeNrOfSquaresToEdge()
     this.renderFromFEN(fen)
-    this.moves = this.generateLegalMoves()
+    this.generateLegalMoves()
     this.info.innerHTML = "White to paly"
     this.isInCheck = false;
   }
@@ -103,6 +116,9 @@ export class Board {
         const squareDiv = document.createElement("div")
         const color = (rank + file) % 2 === 0 ? "white" : "black"
         squareDiv.id = idx.toString()
+        if (DEBUG_MODE) {
+          squareDiv.innerHTML = idx.toString();
+        }
         squareDiv.className = "square " + color
         squareDiv.ondrop = function (ev: DragEvent) {
           drop(ev, that)
@@ -144,55 +160,77 @@ export class Board {
     return pieceDOM
   }
 
-  getMovesForPiece(piece: PieceCode, startSquare: number, moves: Record<number, Move[]>) {
-    if (piece === PieceCode.Empty) return
-    if (getPieceColor(piece) !== this.colorToMove) return;
-    if (isSlidingPiece(piece)) {
-      this.generateSlidingMoves(startSquare, piece, moves[startSquare])
-    } else if (isKnight(piece)) {
-      this.generateKnightMoves(startSquare, piece, moves[startSquare])
-    } else if (isPawn(piece)) {
-      this.generatePawnMoves(startSquare, piece, moves[startSquare])
-    } else { // is King
-      this.generateKingMoves(startSquare, moves[startSquare])
-    }
-  }
+  generateLegalMoves() {
+    this.moves = {
+      [PieceColor.White]: {},
+      [PieceColor.Black]: {}
+    };
 
-  generateLegalMoves(): Record<number, Move[]> {
-    if (this.isInCheck) {
-      //TODO: Implement check legal moves
-    }
-    const moves: Record<number, Move[]> = {}
+    this.attackedSquares[PieceColor.White].clear()
+    this.attackedSquares[PieceColor.Black].clear()
+
     for (let startSquare = 0; startSquare < 64; startSquare++) {
-      moves[startSquare] = []
       const piece = this.squares[startSquare]?.getPiece()
       if (piece === PieceCode.Empty) continue;
-      this.getMovesForPiece(piece, startSquare, moves);
+      this.getMovesForPiece(piece, startSquare);
     }
-    return moves
+    if (DEBUG_MODE) {
+      console.log(this.attackedSquares)
+      this.colorAttackedSquares();
+    }
   }
 
-  generateSlidingMoves(startSquare: number, piece: PieceCode, moves: Move[]) {
+  getMovesForPiece(piece: PieceCode, startSquare: number) {
+    const pieceColor = getPieceColor(piece);
+    if (isSlidingPiece(piece)) {
+      this.generateSlidingMoves(startSquare, piece, pieceColor)
+    } else if (isKnight(piece)) {
+      this.generateKnightMoves(startSquare, piece, pieceColor)
+    } else if (isPawn(piece)) {
+      this.generatePawnMoves(startSquare, piece, pieceColor)
+    } else { // is King
+      this.generateKingMoves(startSquare, pieceColor)
+    }
+  }
+
+  addMoveToLegalMoves(startSquare: number, targetSquare: number, pieceColor: PieceColor, addAtackedSquare: boolean = true) {
+    if (!this.moves[pieceColor][startSquare]) {
+      this.moves[pieceColor][startSquare] = []
+    }
+    if (pieceColor === this.checkedColor && !this.attackPathToKing.has(targetSquare)) {
+      return;
+    }
+    this.moves[pieceColor][startSquare].push({ startSquare: startSquare, targetSquare: targetSquare })
+    if (addAtackedSquare) {
+      this.attackedSquares[pieceColor].add(targetSquare)
+    }
+  }
+
+  generateSlidingMoves(startSquare: number, piece: PieceCode, pieceColor: PieceColor) {
     const startDirIndex = pieceIsType(piece, PieceType.Bishop) ? 4 : 0
     const endDirIndex = pieceIsType(piece, PieceType.Rook) ? 4 : 8
     for (let dirIdx = startDirIndex; dirIdx < endDirIndex; dirIdx++) {
       for (let nrOfSquares = 0; nrOfSquares < this.nrOfSquaresToEdge[startSquare][dirIdx]; nrOfSquares++) {
         const targetSquare = startSquare + slidingMovementOffsets[dirIdx] * (nrOfSquares + 1)
+        if (targetSquare > 63 || targetSquare < 0) break;
         const pieceOnTargetSquare = this.squares[targetSquare]?.getPiece()
         // If we find a piece in a direction and it is our color we cannot go to it
         if (pieceOnTargetSquare !== PieceCode.Empty && getPieceColor(pieceOnTargetSquare) === this.colorToMove) break
 
-        moves.push({ startSquare: startSquare, targetSquare: targetSquare })
-
+        if (!this.moves[pieceColor][startSquare]) {
+          this.moves[pieceColor][startSquare] = []
+        }
+        this.addMoveToLegalMoves(startSquare, targetSquare, pieceColor);
         // If we find a piece in a direction and it is not our color we capture it and cannot go further
         if (pieceOnTargetSquare !== PieceCode.Empty && getPieceColor(pieceOnTargetSquare) !== this.colorToMove) break
       }
     }
   }
 
-  generateKnightMoves(startSquare: number, piece: PieceCode, moves: Move[]) {
+  generateKnightMoves(startSquare: number, piece: PieceCode, pieceColor: PieceColor) {
     for (let dirIdx = 0; dirIdx < 8; dirIdx++) {
       const targetSquare = startSquare + knightMovementOffsets[dirIdx]
+      if (targetSquare > 63 || targetSquare < 0) continue;
       const pieceOnTargetSquare = this.squares[targetSquare]?.getPiece()
       if (
         pieceOnTargetSquare !== PieceCode.Empty
@@ -200,25 +238,34 @@ export class Board {
       ) continue
 
       if (targetSquareCausesKnightAHFileWrap(startSquare, targetSquare)) continue
-      moves.push({ startSquare: startSquare, targetSquare: targetSquare })
+      this.addMoveToLegalMoves(startSquare, targetSquare, pieceColor);
     }
   }
 
-  generatePawnMoves(startSquare: number, piece: PieceCode, moves: Move[]) {
-    let pawnOffsets = getPieceColor(piece) === PieceColor.White ? [8, 7, 9, 16] : [-8, -9, -7, -16]
+  generatePawnMoves(startSquare: number, piece: PieceCode, pieceColor: PieceColor) {
+    const pawnOffsets = getPawnOffsets(pieceColor);
+    if (!this.moves[pieceColor][startSquare]) {
+      this.moves[pieceColor][startSquare] = []
+    }
     if (this.squares[startSquare + pawnOffsets[0]]?.getPiece() === PieceCode.Empty) {
-      moves.push({ startSquare: startSquare, targetSquare: startSquare + pawnOffsets[0] })
+      this.addMoveToLegalMoves(startSquare, startSquare + pawnOffsets[0], pieceColor, false);
     }
     const leftDiagonalSquarePiece = this.squares[startSquare + pawnOffsets[1]]?.getPiece()
     const rightDiagonalSquarePiece = this.squares[startSquare + pawnOffsets[2]]?.getPiece()
-    if (leftDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(leftDiagonalSquarePiece) !== getPieceColor(piece) && !isHFile(startSquare)) {
-      moves.push({ startSquare: startSquare, targetSquare: startSquare + pawnOffsets[1] })
+    if (!isHFile(startSquare)) {
+      if (leftDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(leftDiagonalSquarePiece) !== pieceColor) {
+        this.addMoveToLegalMoves(startSquare, startSquare + pawnOffsets[1], pieceColor, false);
+      }
+      this.attackedSquares[pieceColor].add(startSquare + pawnOffsets[1])
     }
-    if (rightDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(rightDiagonalSquarePiece) !== getPieceColor(piece) && !isAFile(startSquare)) {
-      moves.push({ startSquare: startSquare, targetSquare: startSquare + pawnOffsets[2] })
+    if (!isAFile(startSquare)) {
+      if (rightDiagonalSquarePiece !== PieceCode.Empty && getPieceColor(rightDiagonalSquarePiece) !== pieceColor) {
+        this.addMoveToLegalMoves(startSquare, startSquare + pawnOffsets[2], pieceColor, false);
+      }
+      this.attackedSquares[pieceColor].add(startSquare + pawnOffsets[2])
     }
     if (this.isFirstPawnMove(startSquare, piece, pawnOffsets)) {
-      moves.push({ startSquare: startSquare, targetSquare: startSquare + pawnOffsets[3] })
+      this.addMoveToLegalMoves(startSquare, startSquare + pawnOffsets[3], pieceColor, false);
     }
   }
 
@@ -238,23 +285,27 @@ export class Board {
     return false
   }
 
-  generateKingMoves(startSquare: number, moves: Move[]) {
+  generateKingMoves(startSquare: number, pieceColor: PieceColor) {
     for (let dirIdx = 0; dirIdx < 8; dirIdx++) {
       const targetSquare = startSquare + slidingMovementOffsets[dirIdx]
+      if (targetSquare > 63 || targetSquare < 0 || this.attackedSquares[getOppositeColor(pieceColor)].has(targetSquare)) continue;
       const pieceOnTargetSquare = this.squares[targetSquare]?.getPiece()
       // If we find a piece in a direction and it is our color we cannot go to it
       if (pieceOnTargetSquare !== PieceCode.Empty && getPieceColor(pieceOnTargetSquare) === this.colorToMove) continue
-      moves.push({ startSquare: startSquare, targetSquare: targetSquare })
+      this.addMoveToLegalMoves(startSquare, targetSquare, pieceColor);
     }
   }
 
-  movePutsOppositeColorInCheck(): boolean {
-    const moves = this.generateLegalMoves()
-    return Object.keys(moves).some(moveKey => {
-      return moves[Number(moveKey)].some(move => {
-        return this.squares[move.targetSquare]?.getPiece() === PieceType.King + getOppositeColor(this.colorToMove)
-      })
-    })
+  movePutsOppositeColorInCheck(targetSquare: number): boolean {
+    const oppositeColor = getOppositeColor(this.colorToMove);
+    const kingSquare = this.findSquareOfPiece(PieceType.King + oppositeColor);
+
+    if (!kingSquare) return false;
+
+    this.getMovesForPiece(this.squares[targetSquare].getPiece(), targetSquare)
+    return Object.values(this.moves[this.colorToMove]).some(moveList =>
+      moveList.some(move => move.targetSquare === kingSquare.idx)
+    );
   }
 
   makeMove(piece: PieceCode, origin: number, target: Element): boolean {
@@ -265,22 +316,89 @@ export class Board {
       targetSquare = parseInt(target.id.split("_")[1])
       soundToPlay = captureSound;
     }
-    if (!this.moves[origin].find(move => move.targetSquare == targetSquare)) return false
+    if (!this.moves[this.colorToMove][origin].find(move => move.targetSquare == targetSquare)) return false
     this.squares[origin].placePiece(PieceCode.Empty)
     this.squares[targetSquare].placePiece(parseInt(piece.toString()))
-    if (this.movePutsOppositeColorInCheck()) {
-      soundToPlay = checkSound
+    if (this.movePutsOppositeColorInCheck(targetSquare)) {
+      this.checkedColor = getOppositeColor(this.colorToMove)
+      soundToPlay = checkSound;
+      this.checkInfo.innerHTML = "Check!"
       this.isInCheck = true;
+      this.calculateAttackPathToOppositeKing(piece, targetSquare);
+      if (DEBUG_MODE) {
+        this.colorPathToKing();
+      }
     }
     playSound(soundToPlay);
-    this.colorToMove = getOppositeColor(this.colorToMove) // change color to move 
-    this.moves = this.generateLegalMoves()
+    this.colorToMove = getOppositeColor(this.colorToMove)
+    this.generateLegalMoves()
     if (this.colorToMove === 0) {
       this.info.innerHTML = "White to paly"
     } else {
       this.info.innerHTML = "Black to paly"
     }
     return true;
+  }
+
+  calculateAttackPathToOppositeKing(piece: PieceCode, attackingSquare: number): void {
+    this.attackPathToKing.clear();
+
+    const attackingPieceColor = getPieceColor(piece);
+    const oppositeColor = getOppositeColor(attackingPieceColor);
+    const kingSquare = this.findSquareOfPiece(PieceType.King + oppositeColor);
+
+    if (!kingSquare) return;
+
+    const kingPosition = kingSquare.idx;
+
+    if (isKnight(piece) || isPawn(piece)) {
+      this.attackPathToKing.add(attackingSquare);
+      return;
+    }
+
+    const startDirIndex = pieceIsType(piece, PieceType.Bishop) ? 4 : 0;
+    const endDirIndex = pieceIsType(piece, PieceType.Rook) ? 4 : 8;
+
+    for (let dirIdx = startDirIndex; dirIdx < endDirIndex; dirIdx++) {
+      let currentSquare = attackingSquare;
+      let path = new Set<number>([currentSquare]);
+
+      for (let steps = 0; steps < this.nrOfSquaresToEdge[attackingSquare][dirIdx]; steps++) {
+        currentSquare += slidingMovementOffsets[dirIdx];
+
+        if (currentSquare === kingPosition) {
+          this.attackPathToKing = path;
+          return;
+        }
+        path.add(currentSquare);
+
+        if (this.squares[currentSquare].getPiece() !== PieceCode.Empty) break;
+      }
+    }
+  }
+
+  colorPathToKing() {
+    console.log(this.attackPathToKing)
+    this.attackPathToKing.forEach(squareIdx => {
+      getSquareById(squareIdx.toString(), this.boardDOM)?.classList.add("attack")
+    })
+  }
+
+  colorAttackedSquares() {
+    this.squaresDOM.forEach(square => {
+      square.classList.remove("attacked-white")
+      square.classList.remove("attacked-black")
+    })
+    this.attackedSquares[PieceColor.White].forEach(squareIdx => {
+      getSquareById(squareIdx.toString(), this.boardDOM)?.classList.add("attacked-white")
+    })
+    this.attackedSquares[PieceColor.Black].forEach(squareIdx => {
+      getSquareById(squareIdx.toString(), this.boardDOM)?.classList.add("attacked-black")
+    })
+  }
+
+  findSquareOfPiece(piece: PieceCode): Square | undefined {
+    return this.squares.find(sq => sq.getPiece() === piece);
   }
 }
 
