@@ -9,7 +9,6 @@ body {
 }
 
 .board {
-  border: solid black 1px;
   width: 80vh;
   height: 80vh;
   margin-inline: auto;
@@ -25,6 +24,22 @@ body {
   height: 10vh;
   position: relative;
   border: solid black .2px;
+}
+
+.square:nth-of-type(1) {
+  border-top-left-radius: 4px;
+}
+
+.square:nth-of-type(8) {
+  border-top-right-radius: 4px;
+}
+
+.square:nth-of-type(64) {
+  border-bottom-right-radius: 4px;
+}
+
+.square:nth-of-type(57) {
+  border-bottom-left-radius: 4px;
 }
 
 .square.white {
