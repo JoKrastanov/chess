@@ -39,10 +39,10 @@ export function drop(ev: any, board: Board) {
         square.classList.remove("attack")
     })
     let data = ev.dataTransfer.getData("text");
-    if(data === "") return;
+    if (data === "") return;
     let pieceDOM = document.getElementById(data)
     if (!pieceDOM) return
-    const [piece, origin] = pieceDOM.id.split("_") as unknown as [PieceCode, number]
+    const [piece, origin] = pieceDOM.id.split("_") as unknown as [number, number]
     let target = ev.target
     if (pieceDOM == ev.target) {
         return
@@ -63,6 +63,7 @@ export function drop(ev: any, board: Board) {
 }
 
 function drag(e: DragEvent, board: Board) {
+    if (board.promotionMenuIsOpen) return
     board.boardDOM.childNodes.forEach(squareNode => {
         if (squareNode instanceof HTMLDivElement) {
             squareNode.classList.remove("highlight")
@@ -110,7 +111,7 @@ export function computeNrOfSquaresToEdge(): number[][] {
 
 export function pieceIsType(piece: PieceCode, pieceType: PieceType) {
     // Check for piece type for both colors
-    return piece === <number>pieceType || piece === <number>pieceType + PieceCode.Black
+    return piece == <number>pieceType || piece == <number>pieceType + PieceCode.Black
 }
 
 export function getPieceColor(piece: PieceCode) {
@@ -123,11 +124,11 @@ export function isSlidingPiece(piece: PieceCode) {
 }
 
 export function isKnight(piece: PieceCode) {
-    return piece === PieceCode.WKnight || piece === PieceCode.BKnight
+    return piece == PieceCode.WKnight || piece == PieceCode.BKnight
 }
 
 export function isPawn(piece: PieceCode) {
-    return piece === PieceCode.WPawn || piece === PieceCode.BPawn
+    return piece == PieceCode.WPawn || piece == PieceCode.BPawn
 }
 
 export function allowDrop(ev: any) {
@@ -136,6 +137,36 @@ export function allowDrop(ev: any) {
 
 export function getOppositeColor(colorToMove: number): PieceColor {
     return 8 - colorToMove;
+}
+
+export function moveLeadsToPawnPromotion(piece: PieceCode, square: number): boolean {
+    return isPawn(piece) && squareIsOnLastRank(piece, square)
+}
+
+export function squareIsOnLastRank(piece: PieceCode, square: number) {
+    const color = getPieceColor(piece)
+    if (color === PieceColor.White) {
+        return square >= 56 && square <= 63
+    } else {
+        return square >= 0 && square <= 7
+    }
+}
+
+export function displayPromotionMenu(piece: PieceCode, origin: number, board: Board, target: Element) {
+    const color = getPieceColor(piece) === PieceColor.White ? "white" : "black";
+    const promotionMenu: HTMLDivElement = document.querySelector(`#${color}.promotion-menu`)!;
+    promotionMenu.style.display = "flex";
+    promotionMenu.style.flexDirection = "column";
+    promotionMenu.childNodes.forEach((child) => {
+        const childElement = child as HTMLImageElement;
+        childElement.onclick = () => {
+            const newPiece = childElement.id;
+            const newPieceCode = PieceCode[newPiece as keyof typeof PieceCode];
+            promotionMenu.style.display = "none";
+            board.makeMove(<number>newPieceCode, origin, target, true);
+            console.log(board.squaresDOM, board.squares)
+        }
+    })
 }
 
 export function targetSquareCausesKnightAHFileWrap(startSquare: number, targetSquare: number) {

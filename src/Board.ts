@@ -4,6 +4,7 @@ import {
   captureSound,
   checkSound,
   computeNrOfSquaresToEdge,
+  displayPromotionMenu,
   drop,
   getOppositeColor,
   getPawnOffsets,
@@ -15,6 +16,7 @@ import {
   isPawn,
   isSlidingPiece,
   knightMovementOffsets,
+  moveLeadsToPawnPromotion,
   moveSound,
   pieceIsType,
   playSound,
@@ -29,13 +31,13 @@ import { AttackedSquares } from "./types/AttackedSquares";
 
 // TODO: FEATURES TO IMPLEMENT
 /*
-  * Pinned pieces check
+  ! Pinned pieces check
   * Mate
   * Castling
   * Pawn promotion
   * En passant
 */
-const DEBUG_MODE = false;
+const DEBUG_MODE = true;
 
 export class Board {
   boardDOM: HTMLDivElement;
@@ -50,6 +52,7 @@ export class Board {
   info: HTMLParagraphElement
   checkInfo: HTMLParagraphElement
   isInCheck: boolean
+  promotionMenuIsOpen: boolean
 
   constructor(fen: string) {
     this.info = document.getElementsByClassName("info")[0] as HTMLParagraphElement
@@ -74,6 +77,7 @@ export class Board {
     this.generateLegalMoves()
     this.info.innerHTML = "White to paly"
     this.isInCheck = false;
+    this.promotionMenuIsOpen = false;
   }
 
   renderFromFEN(fen: FENString) {
@@ -315,7 +319,17 @@ export class Board {
     );
   }
 
-  makeMove(piece: PieceCode, origin: number, target: Element): boolean {
+  updateColorToMove() {
+    this.colorToMove = getOppositeColor(this.colorToMove)
+    this.generateLegalMoves()
+    if (this.colorToMove === 0) {
+      this.info.innerHTML = "White to paly"
+    } else {
+      this.info.innerHTML = "Black to paly"
+    }
+  }
+
+  makeMove(piece: PieceCode, origin: number, target: Element, isPromotion: boolean = false): boolean {
     this.checkedColor = null;
     this.isInCheck = false;
     let targetSquare = parseInt(target.id)
@@ -324,6 +338,11 @@ export class Board {
     if (targetIsOccupied) {
       targetSquare = parseInt(target.id.split("_")[1])
       soundToPlay = captureSound;
+    }
+    if (isPromotion) {
+      this.squares[origin].placePiece(PieceCode.Empty)
+      this.squares[targetSquare].placePiece(parseInt(piece.toString()))
+      return true
     }
     if (!this.moves[this.colorToMove][origin].find(move => move.targetSquare == targetSquare)) return false
     this.squares[origin].placePiece(PieceCode.Empty)
@@ -335,14 +354,13 @@ export class Board {
       this.isInCheck = true;
       this.calculateAttackPathToOppositeKing(piece, targetSquare);
     }
-    playSound(soundToPlay);
-    this.colorToMove = getOppositeColor(this.colorToMove)
-    this.generateLegalMoves()
-    if (this.colorToMove === 0) {
-      this.info.innerHTML = "White to paly"
-    } else {
-      this.info.innerHTML = "Black to paly"
+    if (moveLeadsToPawnPromotion(piece, targetSquare)) {
+      this.promotionMenuIsOpen = true;
+      displayPromotionMenu(piece, origin, this, target);
+      return true;
     }
+    playSound(soundToPlay);
+    this.updateColorToMove();
     return true;
   }
 
@@ -384,7 +402,6 @@ export class Board {
   }
 
   colorPathToKing() {
-    console.log(this.attackPathToKing)
     this.attackPathToKing.forEach(squareIdx => {
       getSquareById(squareIdx.toString(), this.boardDOM)?.classList.add("attack")
     })
